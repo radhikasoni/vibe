@@ -187,23 +187,49 @@ def user_change_password(request, id):
 #     "email": "radhika@gmail.com",
 #     "token": "d0e7ceebc59195308ea1a123a5646550587fa436"
 # }
+
 class RegisterUserView(generics.CreateAPIView):
-    permission_classes = [AllowAny]    
+    permission_classes = [AllowAny]
     serializer_class = RegisterUserSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
 
-        if serializer.is_valid():
             user = serializer.save()
-            token, created = Token.objects.get_or_create(user=user)
+            token, _ = Token.objects.get_or_create(user=user)
+
             return Response({
-                "message": "User registered successfully",
-                "username": user.username,
-                "email": user.email,
+                "status": True,
+                "message": "Registered Successfully",
+                "data": {
+                    "username": user.username,
+                    "email": user.email,
+                },
                 "token": token.key
             }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except IntegrityError as e:                       # duplicate email/username etc.
+            return Response({
+                "status": False,
+                "message": "Duplicate user",
+                "errors": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        except serializers.ValidationError as e:          # serializer errors
+            return Response({
+                "status": False,
+                "message": "Validation Error",
+                "errors": e.detail
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:                            # fallback
+            return Response({
+                "status": False,
+                "message": "Unexpected Error",
+                "errors": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # {
 #   "username": "radhika",
