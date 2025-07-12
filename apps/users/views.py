@@ -188,6 +188,7 @@ def user_change_password(request, id):
 #     "token": "d0e7ceebc59195308ea1a123a5646550587fa436"
 # }
 class RegisterUserView(generics.CreateAPIView):
+    permission_classes = [AllowAny]    
     serializer_class = RegisterUserSerializer
 
     def post(self, request, *args, **kwargs):
