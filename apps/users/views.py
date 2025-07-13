@@ -20,6 +20,7 @@ from rest_framework import generics, status
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.db import IntegrityError
 
 # Create your views here.
 
