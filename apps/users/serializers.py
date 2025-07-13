@@ -50,7 +50,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
             'address': validated_data.pop('address', ''),
             'phone': validated_data.pop('phone', ''),
             'avatar': validated_data.pop('avatar', None),
-            'apple_id': validated_data.pop('apple_id', ''),
+            'apple_id': validated_data.pop('apple_id', None),
             'is_apple_user': validated_data.pop('is_apple_user', False)
         }
 
