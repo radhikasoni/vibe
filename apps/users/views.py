@@ -21,6 +21,7 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import IntegrityError
+from rest_framework.exceptions import ValidationError
 
 # Create your views here.
 
@@ -218,11 +219,23 @@ class RegisterUserView(generics.CreateAPIView):
                 "errors": str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        except serializers.ValidationError as e:          # serializer errors
+        except ValidationError as e:        # serializer errors
+            flat = {
+                field: " ".join(msgs) if isinstance(msgs, (list, tuple)) else str(msgs)
+                for field, msgs in e.detail.items()
+            }
+
+            # 2. If BOTH username & email duplicates → craft combined message
+            if {"username", "email"} <= flat.keys() and all("already exists" in v for v in flat.values()):
+                combined = "A user with this username and email already exists."
+            else:
+                # Fallback: stitch all unique messages together
+                combined = " ".join(dict.fromkeys(flat.values()))  # preserves order, removes dupes
+
             return Response({
                 "status": False,
                 "message": "Validation Error",
-                "errors": e.detail
+                "errors": combined
             }, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:                            # fallback
