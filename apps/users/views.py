@@ -256,35 +256,98 @@ class RegisterUserView(generics.CreateAPIView):
 #     "username": "radhika",
 #     "email": "radhika@gmail.com"
 # }
+
 class LoginUserView(APIView):
+    """
+    Returns uniform JSON:
+    {
+        "status": true/false,
+        "message": "...",
+        "token": "abc",      # on success
+        "errors": "..."      # on error
+    }
+    """
+
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = authenticate(
-                username=serializer.validated_data['username'],
-                password=serializer.validated_data['password']
+        try:
+            # ------------------ validate input ------------------
+            serializer = LoginSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            # Serializer may already attach user (see earlier example),
+            # otherwise authenticate manually:
+            user = serializer.validated_data.get("user") or authenticate(
+                username=serializer.validated_data.get("username"),
+                password=serializer.validated_data.get("password")
             )
-            user = serializer.validated_data['user']
-            if user:
-                profile = user.profile
-                if profile.status == 'suspended':
-                    return Response({"error": "Account is suspended."}, status=403)
-                if profile.status == 'deleted':
-                    return Response({"error": "Account is deleted."}, status=403)
 
-                # Update status on login
-                profile.status = 'active'
-                profile.save()
-
-                token, created = Token.objects.get_or_create(user=user)
+            if not user:
                 return Response({
-                    'message': 'Login successful',
-                    'token': token.key,
-                    'username': user.username,
-                    'email': user.email
-                })
-            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    "status": False,
+                    "message": "Invalid credentials",
+                    "errors": "Incorrect username or password."
+                }, status=status.HTTP_401_UNAUTHORIZED)
+
+            # ------------------ profile checks ------------------
+            profile: Profile = user.profile
+            if profile.status == "suspended":
+                return Response({
+                    "status": False,
+                    "message": "Account Suspended",
+                    "errors": "This account is suspended."
+                }, status=403)
+
+            if profile.status == "deleted":
+                return Response({
+                    "status": False,
+                    "message": "Account Deleted",
+                    "errors": "This account has been deleted."
+                }, status=403)
+
+            # Activate user on login
+            profile.status = "active"
+            profile.save()
+
+            # ------------------ success ------------------
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({
+                "status": True,
+                "message": "Login successful",
+                "token": token.key,
+                "username": user.username,
+                "email": user.email,
+            }, status=status.HTTP_200_OK)
+
+        # ------------------ validation errors ------------------
+        except ValidationError as e:
+            flat = {
+                field: " ".join(msgs) if isinstance(msgs, (list, tuple)) else str(msgs)
+                for field, msgs in e.detail.items()
+            }
+            # Merge messages into readable sentence
+            combined = " ".join(dict.fromkeys(flat.values()))
+            return Response({
+                "status": False,
+                "message": "Validation Error",
+                "errors": combined
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # ------------------ other DB / logic errors -------------
+        except IntegrityError as e:
+            return Response({
+                "status": False,
+                "message": "Database Error",
+                "errors": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # ------------------ fallback ----------------------------
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": "Unexpected Error",
+                "errors": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # {
 #   "apple_id": "001025.44a3a4e14fae4b51a2e7bc437c58db3c.0100",
