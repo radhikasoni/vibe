@@ -272,6 +272,7 @@ class LoginUserView(APIView):
         try:
             # ------------------ validate input ------------------
             serializer = LoginSerializer(data=request.data)
+            permission_classes = [AllowAny]
             serializer.is_valid(raise_exception=True)
 
             # Serializer may already attach user (see earlier example),
