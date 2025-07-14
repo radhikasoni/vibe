@@ -236,7 +236,7 @@ class RegisterUserView(generics.CreateAPIView):
                 "status": False,
                 "message": "Validation Error",
                 "errors": combined
-            }, status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:                            # fallback
             return Response({
