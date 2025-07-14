@@ -357,71 +357,109 @@ class LoginUserView(APIView):
 #   "last_name": "Appleseed"
 # }
 class AppleRegisterOrLoginView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
-        serializer = AppleUserSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            serializer = AppleUserSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
 
-        apple_id = serializer.validated_data['apple_id']
-        email = serializer.validated_data.get('email')
-        first_name = serializer.validated_data.get('first_name', '')
-        last_name = serializer.validated_data.get('last_name', '')
+            apple_id = serializer.validated_data['apple_id']
+            email = serializer.validated_data.get('email')
+            first_name = serializer.validated_data.get('first_name', '')
+            last_name = serializer.validated_data.get('last_name', '')
 
-        profile = Profile.objects.filter(apple_id=apple_id).first()
+            profile = Profile.objects.filter(apple_id=apple_id).first()
 
-        if profile:
-            user = profile.user
-            message = "User logged in successfully"
-        else:
-            # Create new user and profile
-            username = f"apple_{apple_id[:10]}"
-            user = User.objects.create(
-                username=username,
-                email=email or "",
-                first_name=first_name,
-                last_name=last_name
-            )
-            Profile.objects.create(user=user, apple_id=apple_id)
-            message = "User registered successfully"
+            if profile:
+                user = profile.user
+                message = "User logged in successfully"
+            else:
+                # Create new user and profile
+                username = f"apple_{apple_id[:10]}"
+                user = User.objects.create(
+                    username=username,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name
+                )
+                Profile.objects.create(user=user, apple_id=apple_id)
+                message = "User registered successfully"
 
-        token, _ = Token.objects.get_or_create(user=user)
+            token, _ = Token.objects.get_or_create(user=user)
 
-        return Response({
-            "message": message,
-            "token": token.key,
-            "username": user.username,
-            "email": user.email
-        }, status=status.HTTP_200_OK)
+            return Response({
+                "status": True,
+                "message": message,
+                "data": {
+                    "username": user.username,
+                    "email": user.email
+                },
+                "token": token.key
+            }, status=status.HTTP_200_OK)
+
+        except IntegrityError as e:
+            return Response({
+                "status": False,
+                "message": "Duplicate entry",
+                "errors": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        except ValidationError as e:
+            flat = {
+                field: " ".join(msgs) if isinstance(msgs, (list, tuple)) else str(msgs)
+                for field, msgs in e.detail.items()
+            }
+            combined = " ".join(dict.fromkeys(flat.values()))
+            return Response({
+                "status": False,
+                "message": "Validation Error",
+                "errors": combined
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": "Unexpected Error",
+                "errors": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class LogoutUserView(APIView):
-    authentication_classes = []  # No token required
-    permission_classes = []      # Anyone can hit this endpoint
-
+    permission_classes = [IsAuthenticated]  # Token required
 
     def post(self, request):
-        username = request.data.get("username")
-        if not username:
-            return Response({"error": "Username is required"}, status=status.HTTP_400_BAD_REQUEST)
-
         try:
-            user = User.objects.get(username=username)
-            token = Token.objects.get(user=user)
-            token.delete()
+            user = request.user  # Retrieved via token
+            try:
+                token = Token.objects.get(user=user)
+                token.delete()
+            except Token.DoesNotExist:
+                return Response({
+                    "status": False,
+                    "message": "Token missing",
+                    "errors": "User is not logged in or token does not exist."
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Update profile status if available
             try:
                 profile = user.profile
                 profile.status = 'logged_out'
                 profile.save()
             except ObjectDoesNotExist:
-                pass  # Optionally log: "No profile found for user"
+                pass  # Optional: log missing profile
 
-            return Response({"message": f"User '{username}' logged out successfully"}, status=status.HTTP_200_OK)
+            return Response({
+                "status": True,
+                "message": f"User '{user.username}' logged out successfully"
+            }, status=status.HTTP_200_OK)
 
-        except User.DoesNotExist:
-            return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
-        except Token.DoesNotExist:
-            return Response({"error": "User is not logged in or token does not exist"}, status=status.HTTP_400_BAD_REQUEST)
-
-
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": "Unexpected error",
+                "errors": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
 class UpdateProfileView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]  # for avatar/image
