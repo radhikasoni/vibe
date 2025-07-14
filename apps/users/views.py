@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.contrib.auth import authenticate
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.views import LoginView, PasswordResetView, PasswordChangeView, PasswordResetConfirmView
 from django.views.generic import CreateView
@@ -18,7 +19,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import RegisterUserSerializer, LoginSerializer, UpdateProfileSerializer, AppleUserSerializer
 from rest_framework import generics, status
 from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import IntegrityError
 from rest_framework.exceptions import ValidationError
@@ -268,16 +268,17 @@ class LoginUserView(APIView):
     }
     """
     permission_classes = [AllowAny]
-    serializer = LoginSerializer(data=request.data)
     def post(self, request):
         try:
             # ------------------ validate input ------------------
+            serializer = LoginSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
+            
 
             # Serializer may already attach user (see earlier example),
             # otherwise authenticate manually:
             user = serializer.validated_data.get("user") or authenticate(
-                username=serializer.validated_data.get("username"),
+                email=serializer.validated_data.get("email"),
                 password=serializer.validated_data.get("password")
             )
 
@@ -285,7 +286,7 @@ class LoginUserView(APIView):
                 return Response({
                     "status": False,
                     "message": "Invalid credentials",
-                    "errors": "Incorrect username or password."
+                    "errors": "Incorrect email or password."
                 }, status=status.HTTP_401_UNAUTHORIZED)
 
             # ------------------ profile checks ------------------

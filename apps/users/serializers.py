@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Profile
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
 
 class RegisterUserSerializer(serializers.ModelSerializer):
     # Include profile fields
@@ -67,12 +68,12 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         return user
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True)
+    email = serializers.CharField(required=True)
     password = serializers.CharField(required=True, write_only=True)
     apple_id = serializers.CharField(required=False)
 
     def validate(self, data):
-        username = data.get('username')
+        email = data.get('email')
         password = data.get('password')
         apple_id = data.get('apple_id')
 
@@ -83,9 +84,9 @@ class LoginSerializer(serializers.Serializer):
             except Profile.DoesNotExist:
                 raise serializers.ValidationError("Invalid Apple ID.")
         else:
-            if not username or not password:
-                raise serializers.ValidationError("Username and password are required.")
-            user = authenticate(username=username, password=password)
+            if not email or not password:
+                raise serializers.ValidationError("Email and password are required.")
+            user = authenticate(email=email, password=password)
             if not user:
                 raise serializers.ValidationError("Invalid credentials.")
             data['user'] = user
