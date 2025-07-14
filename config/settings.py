@@ -223,6 +223,11 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',          # keep default
+    'apps.users.backends.EmailOrUsernameBackend',         # add ours
+]
 ########################################
 
 # risky
