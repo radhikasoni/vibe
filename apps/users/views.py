@@ -209,6 +209,8 @@ class RegisterUserView(generics.CreateAPIView):
                 "data": {
                     "username": user.username,
                     "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
                 },
                 "token": token.key
             }, status=status.HTTP_201_CREATED)
@@ -316,8 +318,12 @@ class LoginUserView(APIView):
                 "status": True,
                 "message": "Login successful",
                 "token": token.key,
-                "username": user.username,
-                "email": user.email,
+                "data": {
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                },
             }, status=status.HTTP_200_OK)
 
         # ------------------ validation errors ------------------
@@ -394,7 +400,9 @@ class AppleRegisterOrLoginView(APIView):
                 "message": message,
                 "data": {
                     "username": user.username,
-                    "email": user.email
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
                 },
                 "token": token.key
             }, status=status.HTTP_200_OK)
