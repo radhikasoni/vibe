@@ -11,10 +11,9 @@ class RegisterUserSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(required=False)
     role = serializers.ChoiceField(choices=[('admin', 'Admin'), ('user', 'User')], default='user')
     country = serializers.CharField(required=False, allow_blank=True)
+    state = serializers.CharField(required=False, allow_blank=True)
     city = serializers.CharField(required=False, allow_blank=True)
-    zip_code = serializers.CharField(required=False, allow_blank=True)
     address = serializers.CharField(required=False, allow_blank=True)
-    phone = serializers.CharField(required=False, allow_blank=True)
     avatar = serializers.ImageField(required=False, allow_null=True)
 
     password = serializers.CharField(write_only=True, min_length=6)
@@ -27,8 +26,8 @@ class RegisterUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'email', 'password',
-                  'first_name', 'last_name', 'role', 'country', 'city',
-                  'zip_code', 'address', 'phone', 'avatar', 'apple_id', 'is_apple_user']
+                  'first_name', 'last_name', 'role', 'country', 'state', 'city',
+                  'address', 'avatar', 'apple_id', 'is_apple_user']
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
@@ -46,10 +45,9 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         profile_fields = {
             'role': validated_data.pop('role', 'user'),
             'country': validated_data.pop('country', ''),
+            'state': validated_data.pop('state', ''),
             'city': validated_data.pop('city', ''),
-            'zip_code': validated_data.pop('zip_code', ''),
             'address': validated_data.pop('address', ''),
-            'phone': validated_data.pop('phone', ''),
             'avatar': validated_data.pop('avatar', None),
             'apple_id': validated_data.pop('apple_id', None),
             'is_apple_user': validated_data.pop('is_apple_user', False)
@@ -109,16 +107,15 @@ class UpdateProfileSerializer(serializers.Serializer):
     # Profile fields
     role = serializers.ChoiceField(choices=[('admin', 'Admin'), ('user', 'User')], required=False)
     country = serializers.CharField(required=False, allow_blank=True)
+    state = serializers.CharField(required=False, allow_blank=True)
     city = serializers.CharField(required=False, allow_blank=True)
-    zip_code = serializers.CharField(required=False, allow_blank=True)
     address = serializers.CharField(required=False, allow_blank=True)
-    phone = serializers.CharField(required=False, allow_blank=True)
     avatar = serializers.ImageField(required=False, allow_null=True)
 
     def update(self, user, profile, validated_data):
         # Separate fields for user and profile
         user_fields = ['username', 'email', 'first_name', 'last_name']
-        profile_fields = ['role', 'country', 'city', 'zip_code', 'address', 'phone', 'avatar']
+        profile_fields = ['role', 'country', 'state', 'city', 'address', 'avatar']
 
         # Update user fields
         for field in user_fields:

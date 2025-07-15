@@ -19,7 +19,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import RegisterUserSerializer, LoginSerializer, UpdateProfileSerializer, AppleUserSerializer
 from rest_framework import generics, status
 from rest_framework.authtoken.models import Token
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from django.db import IntegrityError
 from rest_framework.exceptions import ValidationError
 from rest_framework.authentication import TokenAuthentication
@@ -472,31 +472,79 @@ class LogoutUserView(APIView):
             
 class UpdateProfileView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]  # for avatar/image
+    parser_classes     = [JSONParser, MultiPartParser, FormParser]
 
-
-    def put(self, request):
-        identifier = request.data.get('username') or request.data.get('email')
-
-        if not identifier:
-            return Response({'error': 'Username or email is required to identify the user.'}, status=status.HTTP_400_BAD_REQUEST)
-
+    def post(self, request):
         try:
-            # Find user by username or email
-            user = User.objects.get(username=identifier) if 'username' in request.data else User.objects.get(email=identifier)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+            # ── choose identifier (username OR email) ───────────
+            identifier = request.data.get('username') or request.data.get('email')
+            if not identifier:
+                return Response({
+                    "status": False,
+                    "message": "Validation Error",
+                    "errors": "Username or email is required to identify the user."
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            profile = user.profile
-        except Profile.DoesNotExist:
-            return Response({'error': 'Profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+            # ── locate user ─────────────────────────────────────
+            try:
+                user = (User.objects.get(username=identifier)
+                        if 'username' in request.data
+                        else User.objects.get(email=identifier))
+            except User.DoesNotExist:
+                return Response({
+                    "status": False,
+                    "message": "User not found",
+                    "errors": f"No user matches '{identifier}'."
+                }, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = UpdateProfileSerializer(data=request.data)
-        if serializer.is_valid():
+            # ── locate profile ─────────────────────────────────
+            try:
+                profile = user.profile
+            except Profile.DoesNotExist:
+                return Response({
+                    "status": False,
+                    "message": "Profile not found",
+                    "errors": f"No profile for user '{user.username}'."
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            # ── validate incoming fields ───────────────────────
+            serializer = UpdateProfileSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            # ── perform update ─────────────────────────────────
             serializer.update(user, profile, serializer.validated_data)
-            return Response({"message": "Profile updated successfully."}, status=status.HTTP_200_OK)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "status": True,
+                "message": "Profile updated successfully."
+            }, status=status.HTTP_200_OK)
 
+        # ── validation errors ─────────────────────────────────
+        except ValidationError as e:
+            flat = {
+                f: " ".join(v) if isinstance(v, (list, tuple)) else str(v)
+                for f, v in e.detail.items()
+            }
+            combined = " ".join(dict.fromkeys(flat.values()))    # remove duplicates
+            return Response({
+                "status": False,
+                "message": "Validation Error",
+                "errors": combined
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # ── integrity / DB errors ─────────────────────────────
+        except IntegrityError as e:
+            return Response({
+                "status": False,
+                "message": "Database Error",
+                "errors": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # ── unexpected fallback ───────────────────────────────
+        except Exception as e:
+            return Response({
+                "status": False,
+                "message": "Unexpected Error",
+                "errors": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

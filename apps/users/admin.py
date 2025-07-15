@@ -8,7 +8,7 @@ from apps.users.models import Profile
 class ProfileAdmin(admin.ModelAdmin):
     list_display = (
         'user', 'get_first_name', 'get_last_name', 'get_email', 'role',
-        'country', 'city', 'zip_code', 'address', 'phone', 'avatar', 'apple_id', 'is_apple_user', 'status',
+        'country', 'state', 'city', 'address', 'avatar', 'apple_id', 'is_apple_user', 'status',
     )
     search_fields = (
         'user__username', 'user__first_name', 'user__last_name', 'user__email',
