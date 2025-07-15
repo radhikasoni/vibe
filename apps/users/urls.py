@@ -36,5 +36,6 @@ urlpatterns = [
     path('api/v1/logout/', views.LogoutUserView.as_view(), name='user_logout'),
     path('api/v1/update-profile/', views.UpdateProfileView.as_view(), name='update_profile'),
     path('api/v1/apple-auth/', views.AppleRegisterOrLoginView.as_view(), name='apple_auth'),
+    path("api/v1/get-profile/", views.GetProfileView.as_view(), name="get_profile"),
 
 ]

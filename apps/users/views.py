@@ -532,8 +532,6 @@ class UpdateProfileView(APIView):
                     "state":      profile.state,
                     "address":    profile.address,
                     "avatar":     avatar_url,
-                    "apple_id":   profile.apple_id,
-                    "is_apple_user": profile.is_apple_user,
                     "status":     profile.status,
                 }
             }, status=status.HTTP_200_OK)
@@ -567,3 +565,54 @@ class UpdateProfileView(APIView):
                 "errors": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class GetProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response({
+                "status": False,
+                "message": "Validation Error",
+                "errors": "Email is required."
+            }, status=400)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({
+                "status": False,
+                "message": "User not found",
+                "errors": f"No user with email '{email}'."
+            }, status=404)
+
+        try:
+            profile = user.profile
+        except Profile.DoesNotExist:
+            return Response({
+                "status": False,
+                "message": "Profile not found",
+                "errors": f"No profile for {email}."
+            }, status=404)
+
+        avatar_url = (
+            request.build_absolute_uri(profile.avatar.url)
+            if profile.avatar and hasattr(profile.avatar, "url") else None
+        )
+
+        return Response({
+            "status": True,
+            "message": "Profile fetched successfully",
+            "data": {
+                "username":   user.username,
+                "email":      user.email,
+                "first_name": user.first_name,
+                "last_name":  user.last_name,
+                "country":    profile.country,
+                "city":       profile.city,
+                "state":      profile.state,
+                "address":    profile.address,
+                "avatar":     avatar_url,
+                "status":     profile.status,
+            }
+        }, status=200)
