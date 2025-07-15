@@ -22,6 +22,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import IntegrityError
 from rest_framework.exceptions import ValidationError
+from rest_framework.authentication import TokenAuthentication
 
 # Create your views here.
 
@@ -425,7 +426,8 @@ class AppleRegisterOrLoginView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class LogoutUserView(APIView):
-    permission_classes = [IsAuthenticated]  # Token required
+    # authentication_classes = [TokenAuthentication]   # <- explicit
+    permission_classes     = [IsAuthenticated]
 
     def post(self, request):
         try:
