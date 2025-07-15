@@ -514,9 +514,14 @@ class UpdateProfileView(APIView):
             # ── perform update ─────────────────────────────────
             serializer.update(user, profile, serializer.validated_data)
 
+            avatar_url = (
+                request.build_absolute_uri(profile.avatar.url)
+                if profile.avatar and hasattr(profile.avatar, "url") else None
+            )
+
             return Response({
                 "status": True,
-                "message": "Profile updated successfully."
+                "message": "Profile updated successfully.",
                 "data": {
                     "username":   user.username,
                     "email":      user.email,
