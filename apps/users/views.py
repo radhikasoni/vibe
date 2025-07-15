@@ -517,6 +517,20 @@ class UpdateProfileView(APIView):
             return Response({
                 "status": True,
                 "message": "Profile updated successfully."
+                "data": {
+                    "username":   user.username,
+                    "email":      user.email,
+                    "first_name": user.first_name,
+                    "last_name":  user.last_name,
+                    "country":    profile.country,
+                    "city":       profile.city,
+                    "state":      profile.state,
+                    "address":    profile.address,
+                    "avatar":     avatar_url,
+                    "apple_id":   profile.apple_id,
+                    "is_apple_user": profile.is_apple_user,
+                    "status":     profile.status,
+                }
             }, status=status.HTTP_200_OK)
 
         # ── validation errors ─────────────────────────────────
