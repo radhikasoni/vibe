@@ -9,6 +9,13 @@ class Vibe(models.Model):
         ('deep', 'Deep Conversation'),
     ]
 
+    MOOD_STATUS = [
+        ('paused', 'Paused'),
+        ('cancelled', 'Cancelled'),
+        ('running', 'Running'),
+        ('pauseandhide', 'Paused And Hide'),
+    ]
+
     user          = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='vibes')
     mood_bucket   = models.CharField(max_length=20, choices=MOOD_BUCKETS)
     mood_slider   = models.FloatField(help_text="0.0 → 1.0 position of slider")  # redundant but nice for analytics
@@ -25,6 +32,7 @@ class Vibe(models.Model):
     created_at    = models.DateTimeField(auto_now_add=True)
 
     is_active     = models.BooleanField(default=True)
+    status = models.CharField(max_length=20, choices=MOOD_STATUS, default='running')
 
     def __str__(self):
         return f"Vibe({self.user.username}, {self.mood_bucket}, active={self.is_active})"

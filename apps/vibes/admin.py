@@ -10,6 +10,7 @@ class VibeAdmin(admin.ModelAdmin):
         "mood_bucket",
         "mood_slider",
         "is_active",
+        'status',
         "start_time",
         "end_time",
         "created_at",
@@ -17,6 +18,7 @@ class VibeAdmin(admin.ModelAdmin):
     list_filter = (
         "mood_bucket",
         "is_active",
+        'status',
         ("start_time", admin.DateFieldListFilter),
         ("end_time", admin.DateFieldListFilter),
     )
@@ -52,6 +54,7 @@ class VibeAdmin(admin.ModelAdmin):
         }),
         ("Meta", {
             "fields": (
+                "status",
                 "is_active",
                 "created_at",
             )

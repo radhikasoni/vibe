@@ -13,12 +13,18 @@ class CreateVibeSerializer(serializers.ModelSerializer):
         fields = [
             'mood_bucket', 'mood_slider', 'mood_text',
             'latitude', 'longitude', 'address',
-            'hours', 'minutes', 'seconds',
+            'hours', 'minutes', 'seconds', 'status',
         ]
 
     def validate_mood_slider(self, value):
         if not 0.0 <= value <= 1.0:
             raise serializers.ValidationError("mood_slider must be between 0 and 1.")
+        return value
+    
+    def validate_status(self, value):
+        valid = dict(Vibe.MOOD_STATUS).keys()
+        if value not in valid:
+            raise serializers.ValidationError(f"Invalid status. Must be one of: {', '.join(valid)}")
         return value
 
     def create(self, validated):
@@ -41,3 +47,22 @@ class CreateVibeSerializer(serializers.ModelSerializer):
             **validated
         )
         return vibe
+
+class VibeHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vibe
+        fields = [
+            'id',
+            'mood_bucket',
+            'mood_slider',
+            'mood_text',
+            'latitude',
+            'longitude',
+            'address',
+            'timer_seconds',
+            'start_time',
+            'end_time',
+            'status',
+            'is_active',
+            'created_at',
+        ]
