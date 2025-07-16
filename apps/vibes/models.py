@@ -14,8 +14,8 @@ class Vibe(models.Model):
     mood_slider   = models.FloatField(help_text="0.0 → 1.0 position of slider")  # redundant but nice for analytics
     mood_text     = models.CharField(max_length=150)                             # e.g. tooltip message
 
-    latitude      = models.DecimalField(max_digits=10, decimal_places=7)
-    longitude     = models.DecimalField(max_digits=10, decimal_places=7)
+    latitude = models.DecimalField(max_digits=17, decimal_places=14)
+    longitude = models.DecimalField(max_digits=17, decimal_places=14)
     address       = models.CharField(max_length=255, blank=True)
 
     timer_seconds = models.PositiveIntegerField()                                 # total duration
