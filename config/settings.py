@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 
     "apps.users",
     "apps.dashboard",
+    "apps.vibes",
 
 
     "django_celery_results",

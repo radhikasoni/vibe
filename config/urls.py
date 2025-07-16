@@ -26,6 +26,7 @@ urlpatterns = [
     path("", include("apps.dashboard.urls")),
     path("admin/", admin.site.urls),
     path("users/", include("apps.users.urls")),
+    path("vibes/", include("apps.vibes.urls")),
     path("__debug__/", include("debug_toolbar.urls")),
 
     re_path(r'^media/(?P<path>.*)$', serve,{'document_root': settings.MEDIA_ROOT}), 
