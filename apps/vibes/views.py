@@ -167,3 +167,23 @@ class UpdateVibeStatusView(APIView):
                 "message": "Validation Error",
                 "errors": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
+
+class LatestRunningVibeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        vibe = Vibe.objects.filter(user=user, status='running').order_by('-created_at').first()
+        
+        if not vibe:
+            return Response({
+                "status": False,
+                "message": "No running vibe found."
+            }, status=404)
+
+        serializer = VibeHistorySerializer(vibe)
+        return Response({
+            "status": True,
+            "message": "Latest running vibe fetched successfully.",
+            "data": serializer.data
+        })
