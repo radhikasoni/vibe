@@ -66,3 +66,11 @@ class VibeHistorySerializer(serializers.ModelSerializer):
             'is_active',
             'created_at',
         ]
+
+
+class VibeStatusUpdateSerializer(serializers.ModelSerializer):
+    status = serializers.ChoiceField(choices=[choice[0] for choice in Vibe.MOOD_STATUS])
+
+    class Meta:
+        model = Vibe
+        fields = ['status']

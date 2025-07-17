@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from django.db import IntegrityError
-from .serializers import CreateVibeSerializer, VibeHistorySerializer
+from .serializers import CreateVibeSerializer, VibeHistorySerializer, VibeStatusUpdateSerializer
 from rest_framework.views import APIView
 from django.db.models import Q
 from django.utils.dateparse import parse_datetime
@@ -140,3 +140,30 @@ class VibeHistoryView(APIView):
                 "message": "Unexpected Error",
                 "errors": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UpdateVibeStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, vibe_id):
+        try:
+            vibe = Vibe.objects.get(id=vibe_id, user=request.user)
+        except Vibe.DoesNotExist:
+            return Response({
+                "status": False,
+                "message": "Vibe not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = VibeStatusUpdateSerializer(vibe, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": True,
+                "message": "Vibe status updated successfully",
+                "data": serializer.data
+            })
+        else:
+            return Response({
+                "status": False,
+                "message": "Validation Error",
+                "errors": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
